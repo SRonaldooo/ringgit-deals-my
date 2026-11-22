@@ -1,0 +1,20 @@
+{
+  "updated_at": "2026-11-22T14:53:16.890194+00:00",
+  "usd_to_myr": 4.112786,
+  "deals": [
+    {
+      "id": "ER%2FfOp0PmIbG%2BkoMMkNkd8JljZgzqnQqdZLU%2Bz1MekQ%3D",
+      "title": "Suicide Squad: Kill the Justice League",
+      "steam_app_id": "315210",
+      "store": "Green Man Gaming",
+      "sale_usd": 3.5,
+      "est_deal_myr": 14.39,
+      "steam_myr": 299.0,
+      "steam_retail_myr": 299.0,
+      "savings_vs_steam_myr": 284.61,
+      "discount_pct": 95,
+      "thumb": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/315210/header.jpg",
+      "url": "https://www.cheapshark.com/redirect?dealID=ER%2FfOp0PmIbG%2BkoMMkNkd8JljZgzqnQqdZLU%2Bz1MekQ%3D"
+    }
+  ]
+}
