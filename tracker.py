@@ -1,3 +1,4 @@
+import html
 import json
 import os
 import time
@@ -8,21 +9,23 @@ import requests
 
 # =====================================================================
 # CONFIGURATION
-# Phase 1: Uses CheapShark links (ToS-compliant while getting approved)
-# Phase 2: Switch to "phase2_official" once GMG/Fanatical feeds are live
 # =====================================================================
 AFFILIATE_MODE = os.getenv("AFFILIATE_MODE", "phase1_cheapshark")
 USER_AGENT = "RinggitDealsMY/1.0 (+https://github.com/SRonaldooo/ringgit-deals-my)"
-MIN_RINGGIT_SAVINGS_FOR_ALERT = 10.0  # Only ping Telegram/Discord if cheaper than Steam MY by >= RM10
+MIN_RINGGIT_SAVINGS_FOR_ALERT = 10.0
 
-# Affiliate IDs (Used only in Phase 2 with official retailer feeds)
-GMG_IMPACT_BASE = os.getenv("GMG_IMPACT_BASE", "")       # e.g., https://greenmangaming.sjv.io/c/123456/123456/1234
-FANATICAL_AWIN_ID = os.getenv("FANATICAL_AWIN_ID", "")   # e.g., your Awin publisher ID
-HUMBLE_PARTNER_ID = os.getenv("HUMBLE_PARTNER_ID", "")   # e.g., ?partner=yourname
+# Affiliate IDs (Phase 2)
+GMG_IMPACT_BASE = os.getenv("GMG_IMPACT_BASE", "")
+FANATICAL_AWIN_ID = os.getenv("FANATICAL_AWIN_ID", "")
+HUMBLE_PARTNER_ID = os.getenv("HUMBLE_PARTNER_ID", "")
 
-# Bot Credentials (Set in GitHub Secrets)
+# Bot Credentials (GitHub Secrets / Vars)
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+PUBLIC_TELEGRAM_URL = os.getenv("PUBLIC_TELEGRAM_URL", "")
+if not PUBLIC_TELEGRAM_URL and TELEGRAM_CHAT_ID.startswith("@"):
+    PUBLIC_TELEGRAM_URL = f"https://t.me/{TELEGRAM_CHAT_ID.lstrip('@')}"
+
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 
 DEALS_FILE = Path("deals.json")
@@ -94,7 +97,6 @@ def build_official_affiliate_link(store_name: str, product_url: str) -> str:
 def fetch_phase1_deals(fx_rate: float) -> list[dict]:
     """Phase 1: Pulls discounted PC deals via CheapShark and compares with Steam MYR."""
     url = "https://www.cheapshark.com/api/1.0/deals"
-    # Store IDs: 3=GreenManGaming, 11=Humble Store, 15=Fanatical
     params = {"storeID": "3,11,15", "onSale": "1", "pageSize": "25", "sortBy": "Deal Rating"}
     resp = requests.get(url, params=params, headers={"User-Agent": USER_AGENT}, timeout=15)
     resp.raise_for_status()
@@ -106,7 +108,6 @@ def fetch_phase1_deals(fx_rate: float) -> list[dict]:
         if not app_id:
             continue
 
-        # Respect Steam's 200 req / 5 min limit
         time.sleep(0.5)
         steam_my = get_steam_myr_price(app_id)
         if not steam_my:
@@ -129,27 +130,19 @@ def fetch_phase1_deals(fx_rate: float) -> list[dict]:
             "savings_vs_steam_myr": savings_vs_steam_my,
             "discount_pct": round(float(item["savings"])),
             "thumb": f"https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{app_id}/header.jpg",
-            # Keep CheapShark redirect unmodified in Phase 1 per CheapShark ToS
             "url": f"https://www.cheapshark.com/redirect?dealID={item['dealID']}",
         })
 
-    # Rank by biggest Ringgit savings against Steam Malaysia
     enriched.sort(key=lambda d: d["savings_vs_steam_myr"], reverse=True)
     return enriched
 
 
 def load_official_feeds_stub(fx_rate: float) -> list[dict]:
-    """
-    Phase 2 Stub: Parse your approved GMG Impact Catalog API / Fanatical Awin CSV feed here,
-    call get_steam_myr_price(app_id), and wrap URLs via build_official_affiliate_link().
-    """
     raise NotImplementedError("Populate with your GMG Impact / Fanatical Awin feed credentials.")
 
 
 def send_alerts(deals: list[dict]) -> None:
-    """Pushes high-value MYR arbitrage deals to Telegram and Discord without duplicates."""
-    import html
-
+    """Sends cover-art photo alerts to Telegram (with text fallback) and Discord."""
     posted: set[str] = set()
     if POSTED_CACHE_FILE.exists():
         posted = set(json.loads(POSTED_CACHE_FILE.read_text(encoding="utf-8")))
@@ -164,7 +157,7 @@ def send_alerts(deals: list[dict]) -> None:
         safe_store = html.escape(deal["store"])
         safe_url = html.escape(deal["url"], quote=True)
 
-        tg_msg = (
+        tg_caption = (
             f"🔥 <b>{safe_title}</b> ({safe_store})\n"
             f"💰 Deal Price: <b>~RM {deal['est_deal_myr']:.2f}</b> (${deal['sale_usd']:.2f} USD)\n"
             f"🇲🇾 Steam Malaysia Right Now: RM {deal['steam_myr']:.2f}\n"
@@ -175,29 +168,45 @@ def send_alerts(deals: list[dict]) -> None:
 
         if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
             r = requests.post(
-                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto",
                 json={
                     "chat_id": TELEGRAM_CHAT_ID,
-                    "text": tg_msg,
+                    "photo": deal["thumb"],
+                    "caption": tg_caption,
                     "parse_mode": "HTML",
-                    "disable_web_page_preview": False,
+                },
+                timeout=12,
+            )
+            if not r.ok:
+                print(f"[WARN] sendPhoto failed ({r.status_code}), falling back to sendMessage...")
+                r = requests.post(
+                    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                    json={"chat_id": TELEGRAM_CHAT_ID, "text": tg_caption, "parse_mode": "HTML"},
+                    timeout=10,
+                )
+            if r.ok:
+                print(f"[OK] Sent Telegram banner alert for {deal['title']}")
+            else:
+                print(f"[ERROR] Telegram failed ({r.status_code}): {r.text}")
+
+        if DISCORD_WEBHOOK_URL:
+            requests.post(
+                DISCORD_WEBHOOK_URL,
+                json={
+                    "embeds": [{
+                        "title": f"🔥 {deal['title']} ({deal['store']})",
+                        "url": deal["url"],
+                        "description": (
+                            f"**Deal Price:** ~RM {deal['est_deal_myr']:.2f} (${deal['sale_usd']:.2f} USD)\n"
+                            f"**Steam Malaysia:** RM {deal['steam_myr']:.2f}\n"
+                            f"✅ **Saves RM {deal['savings_vs_steam_myr']:.2f} vs Steam MY**"
+                        ),
+                        "image": {"url": deal["thumb"]},
+                        "color": 1096065,
+                    }]
                 },
                 timeout=10,
             )
-            if not r.ok:
-                print(f"[ERROR] Telegram API error ({r.status_code}): {r.text}")
-            else:
-                print(f"[OK] Sent Telegram alert for {deal['title']}")
-
-        if DISCORD_WEBHOOK_URL:
-            discord_msg = (
-                f"🔥 **{deal['title']}** ({deal['store']})\n"
-                f"💰 Deal Price: **~RM {deal['est_deal_myr']:.2f}** (${deal['sale_usd']:.2f} USD)\n"
-                f"🇲🇾 Steam Malaysia Right Now: RM {deal['steam_myr']:.2f}\n"
-                f"✅ **Beats Steam MY by RM {deal['savings_vs_steam_myr']:.2f}**\n"
-                f"🔗 Grab official Steam key: {deal['url']}"
-            )
-            requests.post(DISCORD_WEBHOOK_URL, json={"content": discord_msg}, timeout=10)
 
         posted.add(unique_key)
         new_posts += 1
@@ -205,6 +214,7 @@ def send_alerts(deals: list[dict]) -> None:
             break
 
     POSTED_CACHE_FILE.write_text(json.dumps(sorted(list(posted))[-500:], indent=2), encoding="utf-8")
+
 
 def main() -> None:
     fx_rate = get_usd_to_myr_rate()
@@ -217,6 +227,7 @@ def main() -> None:
     payload = {
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "usd_to_myr": fx_rate,
+        "telegram_url": PUBLIC_TELEGRAM_URL,
         "deals": deals,
     }
     DEALS_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -226,4 +237,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
