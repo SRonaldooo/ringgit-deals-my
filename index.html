@@ -8,26 +8,30 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
   <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-10">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div>
         <h1 class="text-xl font-bold tracking-tight text-emerald-400">🇲🇾 RinggitDeals MY</h1>
         <p class="text-xs text-slate-400">100% Authorized Steam Keys • Compared Live Against Steam Malaysia (MYR)</p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
         <input id="searchInput" type="search" placeholder="Search game or store..."
           class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-emerald-500" />
         <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
           <input id="onlyCheaperToggle" type="checkbox" checked class="accent-emerald-500 rounded" />
           Beats Steam MY only
         </label>
+        <a id="telegramBtn" href="https://t.me/" target="_blank" rel="noopener"
+          class="hidden bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs px-3.5 py-2 rounded-lg transition">
+          📢 Join Telegram Alerts
+        </a>
       </div>
     </div>
   </header>
 
   <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
-    <div id="statusBanner" class="mb-6 text-xs text-slate-400 flex justify-between items-center bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5">
+    <div id="statusBanner" class="mb-6 text-xs text-slate-400 flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5">
       <span id="metaText">Loading latest Malaysian Ringgit comparisons...</span>
-      <span class="text-emerald-400 font-medium">Zero Shared Accounts • Official Retailers Only</span>
+      <span class="text-emerald-400 font-medium">Zero Shared Accounts • Official Publisher Keys Only</span>
     </div>
 
     <div id="dealsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
@@ -35,51 +39,20 @@
 
   <footer class="border-t border-slate-800 bg-slate-900 mt-12 py-6 px-4 text-xs text-slate-400">
     <div class="max-w-6xl mx-auto space-y-2">
-      <p><strong>Affiliate & Pricing Disclosure:</strong> RinggitDeals MY tracks authorized publisher-sourced digital retailers (Green Man Gaming, Fanatical, Humble Store) and may earn a commission from qualifying purchases at no extra cost to you. Phase 1 deal data powered by CheapShark API & Steam Storefront MYR API.</p>
-      <p><strong>About & Contact:</strong> Built for Malaysian PC gamers to check whether USD bundle/key sales actually beat Steam's regional MYR pricing. Contact: <code>admin@yourdomain.com</code></p>
+      <p><strong>Affiliate & Pricing Disclosure:</strong> RinggitDeals MY tracks authorized publisher-sourced PC game retailers (Green Man Gaming, Fanatical, Humble Store) and may earn a commission from qualifying purchases at no extra cost to buyers. Live MYR baseline prices are queried directly from the Steam Malaysia Storefront API.</p>
+      <p><strong>Project & Contact:</strong> Maintained by <a href="https://github.com/SRonaldooo/ringgit-deals-my" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">SRonaldooo/ringgit-deals-my</a> • Support & Inquiries: <a href="https://github.com/SRonaldooo/ringgit-deals-my/issues" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">GitHub Issues</a></p>
     </div>
   </footer>
 
   <script>
+    // Optional fallback if you didn't use an @username chat ID: paste e.g. "https://t.me/yourchannel" here
+    const DEFAULT_TELEGRAM_URL = "";
+
     const FALLBACK_DATA = {
       updated_at: new Date().toISOString(),
-      usd_to_myr: 4.45,
+      usd_to_myr: 4.11,
       preview: true,
-      deals: [
-        {
-          title: "Monster Hunter World: Iceborne Master Edition",
-          store: "Green Man Gaming",
-          sale_usd: 13.49,
-          est_deal_myr: 60.03,
-          steam_myr: 249.00,
-          savings_vs_steam_myr: 188.97,
-          discount_pct: 78,
-          thumb: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/582010/header.jpg",
-          url: "#"
-        },
-        {
-          title: "Persona 5 Royal",
-          store: "Fanatical",
-          sale_usd: 20.99,
-          est_deal_myr: 93.41,
-          steam_myr: 259.00,
-          savings_vs_steam_myr: 165.59,
-          discount_pct: 65,
-          thumb: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1687950/header.jpg",
-          url: "#"
-        },
-        {
-          title: "Stardew Valley (Regional Price Example)",
-          store: "Humble Store",
-          sale_usd: 11.99,
-          est_deal_myr: 53.36,
-          steam_myr: 39.00,
-          savings_vs_steam_myr: -14.36,
-          discount_pct: 20,
-          thumb: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/413150/header.jpg",
-          url: "#"
-        }
-      ]
+      deals: []
     };
 
     let allDeals = [];
@@ -96,7 +69,7 @@
       });
 
       if (!filtered.length) {
-        grid.innerHTML = `<p class="text-slate-400 text-sm col-span-full">No matching deals beat Steam MY right now. Try unchecking the filter.</p>`;
+        grid.innerHTML = `<p class="text-slate-400 text-sm col-span-full">No matching deals beat Steam MY right now. Try unchecking "Beats Steam MY only".</p>`;
         return;
       }
 
@@ -149,9 +122,15 @@
       } catch (_) {}
 
       allDeals = payload.deals || [];
-      const modeNote = payload.preview ? " (Preview Data — run tracker.py for live feed)" : "";
+      const tgUrl = payload.telegram_url || DEFAULT_TELEGRAM_URL;
+      if (tgUrl) {
+        const btn = document.getElementById("telegramBtn");
+        btn.href = tgUrl;
+        btn.classList.remove("hidden");
+      }
+
       document.getElementById("metaText").textContent =
-        `Updated: ${new Date(payload.updated_at).toLocaleString()} • FX: 1 USD = RM ${payload.usd_to_myr.toFixed(2)}${modeNote}`;
+        `Updated: ${new Date(payload.updated_at).toLocaleString()} • Live FX: 1 USD = RM ${payload.usd_to_myr.toFixed(2)}`;
 
       document.getElementById("searchInput").addEventListener("input", renderDeals);
       document.getElementById("onlyCheaperToggle").addEventListener("change", renderDeals);
@@ -162,4 +141,3 @@
   </script>
 </body>
 </html>
-
