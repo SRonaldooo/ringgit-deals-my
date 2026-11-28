@@ -1,22 +1,8 @@
 {
-  "updated_at": "2026-11-28T00:44:54.462090+00:00",
+  "updated_at": "2026-11-28T14:36:42.862757+00:00",
   "usd_to_myr": 4.121319,
   "telegram_url": "https://t.me/ringgitdealsmy",
   "deals": [
-    {
-      "id": "8v8uFHQN%2F%2FkcQm10RNaXmzbChIN%2Fl%2BS0d7UTWpH%2BZqQ%3D",
-      "title": "WRC 9 FIA World Rally Championship",
-      "steam_app_id": "1267540",
-      "store": "Green Man Gaming",
-      "sale_usd": 4.0,
-      "est_deal_myr": 16.49,
-      "steam_myr": 65.0,
-      "steam_retail_myr": 65.0,
-      "savings_vs_steam_myr": 48.51,
-      "discount_pct": 90,
-      "thumb": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1267540/header.jpg",
-      "url": "https://www.cheapshark.com/redirect?dealID=8v8uFHQN%2F%2FkcQm10RNaXmzbChIN%2Fl%2BS0d7UTWpH%2BZqQ%3D"
-    },
     {
       "id": "ER%2FfOp0PmIbG%2BkoMMkNkd8JljZgzqnQqdZLU%2Bz1MekQ%3D",
       "title": "Suicide Squad: Kill the Justice League",
@@ -30,6 +16,20 @@
       "discount_pct": 95,
       "thumb": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/315210/header.jpg",
       "url": "https://www.cheapshark.com/redirect?dealID=ER%2FfOp0PmIbG%2BkoMMkNkd8JljZgzqnQqdZLU%2Bz1MekQ%3D"
+    },
+    {
+      "id": "eq18LBufARHLswerUh6mD4lwnFsbjITt%2FyRbhkSrcOc%3D",
+      "title": "Riders Republic",
+      "steam_app_id": "2290180",
+      "store": "Green Man Gaming",
+      "sale_usd": 4.0,
+      "est_deal_myr": 16.49,
+      "steam_myr": 12.9,
+      "steam_retail_myr": 129.0,
+      "savings_vs_steam_myr": -3.59,
+      "discount_pct": 90,
+      "thumb": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2290180/header.jpg",
+      "url": "https://www.cheapshark.com/redirect?dealID=eq18LBufARHLswerUh6mD4lwnFsbjITt%2FyRbhkSrcOc%3D"
     }
   ]
 }
